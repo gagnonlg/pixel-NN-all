@@ -1,0 +1,6 @@
+[submodule "pixel-NN"]
+	path = pixel-NN
+	url = ssh://git@gitlab.cern.ch:7999/lgagnon/pixel-NN.git
+[submodule "pixel-NN-training"]
+	path = pixel-NN-training
+	url = ssh://git@gitlab.cern.ch:7999/lgagnon/pixel-NN-training.git
