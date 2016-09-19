@@ -97,7 +97,7 @@ def training_number(name, data):
 
     return '{}/{}'.format(os.getcwd(), name)
 
-def evaluation_number(nn_data, test_data):
+def evaluation_number(nn_data, test_data, name):
     logger = logging.getLogger('launch:evaluation_number')
     with genconfig('number') as cfg:
         logger.info('evaluating performance of number network')
@@ -120,8 +120,14 @@ def evaluation_number(nn_data, test_data):
         output.replace('.db', '.root')
     ])
 
-    return '{}/{}'.format(os.getcwd(), output.replace('.db', '.root'))
+    subprocess.check_call([
+        'python2',
+        'pixel-NN-training/graphs/ROC_curves.py',
+        output.replace('.db', '.root'),
+        name
+    ])
 
+    return '{}/{}'.format(os.getcwd(), output.replace('.db', '.root'))
 
 def get_args():
     args = argparse.ArgumentParser()
@@ -151,7 +157,7 @@ def main():
         nn_data = training_f(args.name, data)
     if args.do_evaluation:
         evaluation_f = globals()['evaluation_{}'.format(args.type)]
-        eval_data = evaluation_f(nn_data, data)
+        eval_data = evaluation_f(nn_data, data, args.name)
 
     return 0
 
