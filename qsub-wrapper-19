@@ -1,0 +1,17 @@
+#!/bin/bash
+
+. /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/user/atlasLocalSetup.sh
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+mkdir ${PBS_JOBID}_${PBS_JOBNAME}
+cd ${PBS_JOBID}_${PBS_JOBNAME}
+
+git clone --recursive $SCRIPT_DIR .
+
+. $ATLAS_LOCAL_ROOT_BASE/packageSetups/localSetup.sh 'asetup 19.2.0'
+
+make -C pixel-NN-training all TTrainedNetwork.so
+
+$@
+

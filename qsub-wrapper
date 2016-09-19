@@ -1,0 +1,19 @@
+#!/bin/bash
+
+. /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/user/atlasLocalSetup.sh ""
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+mkdir ${PBS_JOBID}_${PBS_JOBNAME}
+cd ${PBS_JOBID}_${PBS_JOBNAME}
+
+git clone --recursive $SCRIPT_DIR .
+
+. $ATLAS_LOCAL_ROOT_BASE/packageSetups/localSetup.sh 'rcSetup Base,2.4.18'
+
+rc find_packages
+rc compile
+make -C pixel-NN-training
+
+$@
+
