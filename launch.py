@@ -61,6 +61,9 @@ def input_number(data):
 
 def genconfig(nn_type):
 
+    logger = logging.getLogger('launch:genconfig')
+    logger.info('generating variables configuration')
+
     tmp = tempfile.NamedTemporaryFile()
     subprocess.check_call(
         ['python2', 'pixel-NN-training/genconfig.py', '--type', nn_type],
@@ -70,7 +73,13 @@ def genconfig(nn_type):
     return tmp
 
 def training_number(name, data):
+    logger = logging.getLogger('launch:training_number')
+
+    if 'number' not in name:
+        name += '_number'
+
     with genconfig('number') as cfg:
+        logger.info('training number neural network')
         train_nn(
             training_input='{}.number.training.root'.format(data),
             validation_fraction=0.1,
@@ -88,6 +97,32 @@ def training_number(name, data):
 
     return '{}/{}'.format(os.getcwd(), name)
 
+def evaluation_number(nn_data, test_data):
+    logger = logging.getLogger('launch:evaluation_number')
+    with genconfig('number') as cfg:
+        logger.info('evaluating performance of number network')
+        output = '{}.db'.format(os.path.basename(nn_data))
+        eval_nn(
+            inputp='{}.number.test.root'.format(test_data),
+            model='{}.model.yaml'.format(nn_data),
+            weights='{}.weights.hdf5'.format(nn_data),
+            config=cfg.name,
+            output=output,
+            normalization='{}.normalization.txt'.format(nn_data),
+        )
+
+    os.environ['PATH'] += '{}{}/pixel-NN-training'.format(os.pathsep, os.getcwd())
+    subprocess.check_call([
+        'bash',
+        'pixel-NN-training/test-driver',
+        'number',
+        output,
+        output.replace('.db', '.root')
+    ])
+
+    return '{}/{}'.format(os.getcwd(), output.replace('.db', '.root'))
+
+
 def get_args():
     args = argparse.ArgumentParser()
     args.add_argument('type', choices=['number'])
@@ -95,6 +130,7 @@ def get_args():
     args.add_argument('data')
     args.add_argument('--do-inputs', default=False, action='store_true')
     args.add_argument('--do-training', default=False, action='store_true')
+    args.add_argument('--do-evaluation', default=False, action='store_true')
     return args.parse_args()
 
 def main():
@@ -113,44 +149,12 @@ def main():
     if args.do_training:
         training_f = globals()['training_{}'.format(args.type)]
         nn_data = training_f(args.name, data)
+    if args.do_evaluation:
+        evaluation_f = globals()['evaluation_{}'.format(args.type)]
+        eval_data = evaluation_f(nn_data, data)
 
     return 0
 
 
 if __name__ == '__main__':
     main()
-
-
-""" reserve
-
-
-def eval_number(nn_data, test_data):
-    with tempfile.NamedTemporaryFile as tmp:
-        subprocess.check_call(
-            ['python2', 'genconfig.py', '--type', 'number']
-            stdout=tmp
-        )
-        tmp.flush()
-
-        eval_nn(
-            inputp='{}.number.test.root'.format(test_data),
-            model='{}.model.yaml'.format(nn_data),
-            weights='{}.weights.model.yaml'.format(nn_data),
-            config=tmp.name,
-            output='{}.db'.format(os.path.basename(nn_data)),
-            normalization='{}.normalization.txt'.format(nn_data),
-        )
-
-
-    if args.do_training:
-        training_f = globals('training_{}'.format(args.type))
-        datadir = training_f(name, datadir)
-    if args.do_evaluation:
-        evaluation_f = globals('evaluation_{}'.format(args.type))
-        datadir = evaluation_f(name, datadir)
-    if args.do_figures:
-        figures_f = globals('figures_{}'.format(args.type))
-        figures_f(name, datadir)
-
-
-"""
