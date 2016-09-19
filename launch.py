@@ -134,12 +134,51 @@ def training_number(name, data):
             output_activation='sigmoid2',
             regularizer=1e-7,
             momentum=0.4,
+            batch=60,
             min_epochs=1,
             max_epochs=1,
             verbose=True
         )
 
     return '{}/{}'.format(os.getcwd(), name)
+
+
+def training_pos(name, data, nparticle):
+
+    nn = 'pos{}'.format(nparticle)
+
+    logger = logging.getLogger('launch:training_{}'.format(nn))
+
+    if nn not in name:
+        name += '_{}'.format(nn)
+
+    with genconfig(nn) as cfg:
+        logger.info('training {} neural network'.format(nn))
+        train_nn(
+            training_input='{}.{}.training.root'.format(data,nn),
+            validation_fraction=0.1,
+            output=name,
+            config=cfg.name,
+            structure=[40,20],
+            activation='sigmoid2',
+            output_activation='linear',
+            regularizer=1e-7,
+            momentum=0.3,
+            batch=30,
+            min_epochs=1,
+            max_epochs=1,
+            verbose=True
+        )
+
+    return '{}/{}'.format(os.getcwd(), name)
+
+def training_pos1(name,data):
+    return training_pos(name, data, 1)
+def training_pos2(name,data):
+    return training_pos(name, data, 2)
+def training_pos3(name,data):
+    return training_pos(name, data, 3)
+
 
 def evaluation_number(nn_data, test_data, name):
     logger = logging.getLogger('launch:evaluation_number')
