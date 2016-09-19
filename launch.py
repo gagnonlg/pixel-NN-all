@@ -244,6 +244,61 @@ def training_pos3(name, data):
     return training_pos(name, data, 3)
 
 
+def training_error(name, data, flavor):
+
+    nn_type = 'error{}'.format(flavor)
+
+    logger = logging.getLogger('launch:training_{}'.format(nn_type))
+
+    if nn_type not in name:
+        name += '_{}'.format(nn_type)
+
+    with genconfig(nn_type) as cfg:
+        logger.info('training %s neural network', nn_type)
+        train_nn(
+            training_input='{}.{}.training.root'.format(data, nn_type[:-1]),
+            validation_fraction=0.1,
+            output=name,
+            config=cfg.name,
+            structure=[15, 10],
+            activation='sigmoid2',
+            output_activation='sigmoid2',
+            regularizer=1e-6,
+            momentum=0.7,
+            batch=50,
+            min_epochs=50,
+            max_epochs=100,
+            verbose=True
+        )
+
+    return '{}/{}'.format(os.getcwd(), name)
+
+
+def training_error1x(name, data):
+    return training_error(name, data, '1x')
+
+
+def training_error1y(name, data):
+    return training_error(name, data, '1y')
+
+
+def training_error2x(name, data):
+    return training_error(name, data, '2x')
+
+
+def training_error2y(name, data):
+    return training_error(name, data, '2y')
+
+
+def training_error3x(name, data):
+    return training_error(name, data, '3x')
+
+
+def training_error3y(name, data):
+    return training_error(name, data, '3y')
+
+
+
 def evaluation_number(nn_data, test_data, name):
     logger = logging.getLogger('launch:evaluation_number')
     with genconfig('number') as cfg:
@@ -303,7 +358,7 @@ def evaluation_pos(nn_data, test_data, name, nparticle):
 
 def get_args():
     args = argparse.ArgumentParser()
-    args.add_argument('type', choices=['number', 'pos1', 'pos2', 'pos3', 'error'])
+    args.add_argument('type', choices=['number', 'pos1', 'pos2', 'pos3', 'error', 'error1x', 'error1y', 'error2x', 'error2y', 'error3x', 'error3y'])
     args.add_argument('name')
     args.add_argument('data', nargs='+')
     args.add_argument('--do-inputs', default=False, action='store_true')
@@ -321,6 +376,10 @@ def main():
     if not any([args.do_inputs]):
         logger.error('no action specified!')
         return 1
+
+    if (args.do_training or args.do_evaluation) and args.type == 'error':
+        logger.error('"error" type only used with do_inputs! use error{1x,2y,2x,2y,3x,3y} otherwise.')
+        exit(1)
 
     if args.do_inputs:
         input_f = globals()['input_{}'.format(args.type)]
