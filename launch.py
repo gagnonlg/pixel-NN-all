@@ -45,7 +45,7 @@ def input_number(data):
     subprocess.check_call([
         'python2',
         'pixel-NN/scripts/shuffle_tree.py',
-        '--seed', 750,
+        '--seed', '750',
         '--input',  '{}.number.training.root'.format(base),
         '--output',  '{}.number.training.root_'.format(base),
     ])
