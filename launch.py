@@ -210,6 +210,34 @@ def evaluation_number(nn_data, test_data, name):
         name
     ])
 
+def evaluation_pos(nn_data, test_data, name, nparticle):
+    nn = 'pos{}'.format(nparticles)
+    logger = logging.getLogger('launch:evaluation_{}'.format(nn))
+
+    with genconfig(nn) as cfg:
+        logger.info('evaluating performance of {} network'.format(nn))
+        output = '{}.db'.format(os.path.basename(nn_data))
+        eval_nn(
+            inputp='{}.{}.test.root'.format(test_data, nn),
+            model='{}.model.yaml'.format(nn_data),
+            weights='{}.weights.hdf5'.format(nn_data),
+            config=cfg.name,
+            output=output,
+            normalization='{}.normalization.txt'.format(nn_data),
+        )
+
+    os.environ['PATH'] += '{}{}/pixel-NN-training'.format(os.pathsep, os.getcwd())
+    subprocess.check_call([
+        'bash',
+        'pixel-NN-training/test-driver',
+        nn,
+        output,
+        output.replace('.db', '.root')
+    ])
+
+    logger.warning('figures not produced yet for position neural networks')
+
+
 def get_args():
     args = argparse.ArgumentParser()
     args.add_argument('type', choices=['number', 'pos1', 'pos2', 'pos3'])
