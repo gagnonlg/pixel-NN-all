@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append('{}/pixel-NN-training'.format(script_dir))
@@ -58,13 +59,42 @@ def input_number(data):
     return '{}/{}'.format(os.getcwd(), base)
 
 
+def genconfig(nn_type):
+
+    tmp = tempfile.NamedTemporaryFile()
+    subprocess.check_call(
+        ['python2', 'pixel-NN-training/genconfig.py', '--type', nn_type],
+        stdout=tmp
+    )
+    tmp.flush()
+    return tmp
+
+def training_number(name, data):
+    with genconfig('number') as cfg:
+        train_nn(
+            training_input='{}.number.training.root'.format(data),
+            validation_fraction=0.1,
+            output=name,
+            config=cfg.name,
+            structure=[25,20],
+            activation='sigmoid2',
+            output_activation='sigmoid2',
+            regularizer=1e-7,
+            momentum=0.4,
+            min_epochs=1,
+            max_epochs=1,
+            verbose=True
+        )
+
+    return '{}/{}'.format(os.getcwd(), name)
+
 def get_args():
     args = argparse.ArgumentParser()
     args.add_argument('type', choices=['number'])
     args.add_argument('name')
     args.add_argument('data')
     args.add_argument('--do-inputs', default=False, action='store_true')
-    #args.add_argument('--do-training', default=False, action='store_true')
+    args.add_argument('--do-training', default=False, action='store_true')
     return args.parse_args()
 
 def main():
@@ -72,7 +102,6 @@ def main():
     logger = logging.getLogger('launch:main')
 
     args = get_args()
-    data = args.data
 
     if not any([args.do_inputs]):
         logger.error('no action specified!')
@@ -80,7 +109,10 @@ def main():
 
     if args.do_inputs:
         input_f = globals()['input_{}'.format(args.type)]
-        datadir = input_f(data)
+        data = input_f(args.data)
+    if args.do_training:
+        training_f = globals()['training_{}'.format(args.type)]
+        nn_data = training_f(args.name, data)
 
     return 0
 
@@ -91,24 +123,6 @@ if __name__ == '__main__':
 
 """ reserve
 
-def train_number(name, data):
-    with genconfig('number') as cfg:
-        train_nn(
-            training_input='{}.number.training.root'.format(data),
-            validation_fraction=0.1,
-            output=name,
-            config=cfg.name,
-            structure=[25,20],
-            activation='sigmoid2',
-            output_activation='sigmoid2',
-            regularizer=FIXME,
-            momentum=FIXME,
-            min_epochs=50,
-            max_epochs=100,
-            verbose=True
-        )
-
-    return '{}/{}'.format(ospath.getcwd(), name)
 
 def eval_number(nn_data, test_data):
     with tempfile.NamedTemporaryFile as tmp:
