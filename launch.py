@@ -59,6 +59,50 @@ def input_number(data):
     return '{}/{}'.format(os.getcwd(), base)
 
 
+def input_pos(data, nparticle):
+
+    nn = 'pos{}'.format(nparticle)
+
+    logger = logging.getLogger('launch:input_pos{}'.format(nn))
+
+    base = os.path.basename(data)
+
+    logger.info('Creating input for number neural network')
+    subprocess.check_call([
+        'python2',
+        'pixel-NN/scripts/Run.py',
+        '--scandirs', data,
+        '--submit-dir', 'submit_{}'.format(nn),
+        '--driver', 'direct',
+        '--overwrite',
+        '--type', nn
+    ])
+
+    logger.info('resizing the dataset')
+    subprocess.check_call([
+        '{}/RootCoreBin/bin/x86_64-slc6-gcc49-opt/resizePixelDataset'.format(os.getcwd()),
+        '-n', '12000000',
+        '{}.{}.training.root'.format(base, nn),
+        'submit_{}/data-NNinput/{}.root'.format(nn, base)
+    ])
+    subprocess.check_call([
+        '{}/RootCoreBin/bin/x86_64-slc6-gcc49-opt/resizePixelDataset'.format(os.getcwd()),
+        '-s', '12000000',
+        '-n', '5000000',
+        '{}.{}.test.root'.format(base, nn),
+        'submit_{}/data-NNinput/{}.root'.format(nn, base)
+    ])
+
+    return '{}/{}'.format(os.getcwd(), base)
+
+def input_pos1(data):
+    return input_pos(data, 1)
+def input_pos2(data):
+    return input_pos(data, 2)
+def input_pos3(data):
+    return input_pos(data, 3)
+
+
 def genconfig(nn_type):
 
     logger = logging.getLogger('launch:genconfig')
@@ -127,11 +171,9 @@ def evaluation_number(nn_data, test_data, name):
         name
     ])
 
-    return '{}/{}'.format(os.getcwd(), output.replace('.db', '.root'))
-
 def get_args():
     args = argparse.ArgumentParser()
-    args.add_argument('type', choices=['number'])
+    args.add_argument('type', choices=['number', 'pos1', 'pos2', 'pos3'])
     args.add_argument('name')
     args.add_argument('data')
     args.add_argument('--do-inputs', default=False, action='store_true')
