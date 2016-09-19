@@ -5,23 +5,26 @@ import subprocess
 import sys
 import tempfile
 
-from evalNN_keras import eval_nn
-from trainNN_keras import train_nn
-
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-def init():
-    sys.path.append('{}/pixel-NN-training'.format(SCRIPT_DIR))
-    logging.basicConfig(
-        level=logging.INFO,
-        format='[%(name)s] %(levelname)s %(message)s'
-    )
-    os.environ['PATH'] += '{}{}/pixel-NN-training'.format(
-        os.pathsep,
-        os.getcwd()
-    )
+# init()
+sys.path.append('{}/pixel-NN-training'.format(SCRIPT_DIR))
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(name)s] %(levelname)s %(message)s'
+)
+os.environ['PATH'] += '{}{}/pixel-NN-training'.format(
+    os.pathsep,
+    os.getcwd()
+)
+
+try:
+    from evalNN_keras import eval_nn
+    from trainNN_keras import train_nn
+except ImportError:
+    logging.warning('ImportError for evalNN_keras or trainNN_keras')
 
 
 def input_number(data):
@@ -117,6 +120,45 @@ def input_pos2(data):
 
 def input_pos3(data):
     return input_pos(data, 3)
+
+
+def input_error(data):
+
+    logger = logging.getLogger('launch:input_error')
+
+    pos_data, pos_nn = data
+
+    output = os.path.basename(pos_data).replace('.pos', '.error')
+    nn_output = '{}.ttrained.root'.format(os.path.basename(pos_nn))
+
+    logger.info('converting the position neural network to TTrainedNetwork format')
+    subprocess.check_call([
+        'python2',
+        'pixel-NN-training/keras2ttrained.py',
+        '--model', '{}.model.yaml'.format(pos_nn),
+        '--weights', '{}.weights.hdf5'.format(pos_nn),
+        '--normalization', '{}.normalization.txt'.format(pos_nn),
+        '--output', nn_output
+    ])
+
+    if 'pos1' in pos_data:
+        nbins = 30
+    elif 'pos2' in pos_data:
+        nbins = 25
+    elif 'pos3' in pos_data:
+        nbins = 20
+
+    for dset in ['training', 'test']:
+        logger.info('creating the %s set', dset)
+
+        subprocess.check_call([
+            'python2',
+            'pixel-NN-training/errorNN_input.py',
+            '--input', os.path.realpath('{}.{}.root'.format(pos_data, dset)),
+            '--ttrained', nn_output,
+            '--output', '{}.{}.root'.format(output, dset),
+            '--nbins', str(nbins)
+        ])
 
 
 def genconfig(nn_type):
@@ -261,9 +303,9 @@ def evaluation_pos(nn_data, test_data, name, nparticle):
 
 def get_args():
     args = argparse.ArgumentParser()
-    args.add_argument('type', choices=['number', 'pos1', 'pos2', 'pos3'])
+    args.add_argument('type', choices=['number', 'pos1', 'pos2', 'pos3', 'error'])
     args.add_argument('name')
-    args.add_argument('data')
+    args.add_argument('data', nargs='+')
     args.add_argument('--do-inputs', default=False, action='store_true')
     args.add_argument('--do-training', default=False, action='store_true')
     args.add_argument('--do-evaluation', default=False, action='store_true')
@@ -271,8 +313,6 @@ def get_args():
 
 
 def main():
-
-    init()
 
     logger = logging.getLogger('launch:main')
 
