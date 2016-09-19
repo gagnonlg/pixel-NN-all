@@ -55,7 +55,7 @@ def input_number(data):
         '{}.number.training.root'.format(base),
     ])
 
-    return '{}/{}'.format(os.path.getcwd(), base)
+    return '{}/{}'.format(os.getcwd(), base)
 
 
 def get_args():
