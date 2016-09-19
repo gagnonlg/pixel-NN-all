@@ -1,21 +1,28 @@
+import argparse
+import logging
 import os
+import subprocess
 import sys
 import tempfile
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append('{}/pixel-NN-training'.format(script_dir))
-
-
-import argparse
-import logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(name)s] %(levelname)s %(message)s'
-)
-import subprocess
-
 from evalNN_keras import eval_nn
 from trainNN_keras import train_nn
+
+
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+def init():
+    sys.path.append('{}/pixel-NN-training'.format(SCRIPT_DIR))
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(name)s] %(levelname)s %(message)s'
+    )
+    os.environ['PATH'] += '{}{}/pixel-NN-training'.format(
+        os.pathsep,
+        os.getcwd()
+    )
+
 
 def input_number(data):
 
@@ -47,8 +54,8 @@ def input_number(data):
         'python2',
         'pixel-NN/scripts/shuffle_tree.py',
         '--seed', '750',
-        '--input',  '{}.number.training.root'.format(base),
-        '--output',  '{}.number.training.root_'.format(base),
+        '--input', '{}.number.training.root'.format(base),
+        '--output', '{}.number.training.root_'.format(base),
     ])
     subprocess.check_call([
         'mv',
@@ -61,9 +68,9 @@ def input_number(data):
 
 def input_pos(data, nparticle):
 
-    nn = 'pos{}'.format(nparticle)
+    nn_type = 'pos{}'.format(nparticle)
 
-    logger = logging.getLogger('launch:input_pos{}'.format(nn))
+    logger = logging.getLogger('launch:input_pos{}'.format(nn_type))
 
     base = os.path.basename(data)
 
@@ -72,33 +79,42 @@ def input_pos(data, nparticle):
         'python2',
         'pixel-NN/scripts/Run.py',
         '--scandirs', data,
-        '--submit-dir', 'submit_{}'.format(nn),
+        '--submit-dir', 'submit_{}'.format(nn_type),
         '--driver', 'direct',
         '--overwrite',
-        '--type', nn
+        '--type', nn_type
     ])
 
     logger.info('resizing the dataset')
     subprocess.check_call([
-        '{}/RootCoreBin/bin/x86_64-slc6-gcc49-opt/resizePixelDataset'.format(os.getcwd()),
+        '{}/RootCoreBin/bin/x86_64-slc6-gcc49-opt/resizePixelDataset'.format(
+            os.getcwd()
+        ),
         '-n', '12000000',
-        '{}.{}.training.root'.format(base, nn),
-        'submit_{}/data-NNinput/{}.root'.format(nn, base)
+        '{}.{}.training.root'.format(base, nn_type),
+        'submit_{}/data-NNinput/{}.root'.format(nn_type, base)
     ])
     subprocess.check_call([
-        '{}/RootCoreBin/bin/x86_64-slc6-gcc49-opt/resizePixelDataset'.format(os.getcwd()),
+        '{}/RootCoreBin/bin/x86_64-slc6-gcc49-opt/resizePixelDataset'.format(
+            os.getcwd()
+        ),
         '-s', '12000000',
         '-n', '5000000',
-        '{}.{}.test.root'.format(base, nn),
-        'submit_{}/data-NNinput/{}.root'.format(nn, base)
+        '{}.{}.test.root'.format(base, nn_type),
+        'submit_{}/data-NNinput/{}.root'.format(nn_type, base)
     ])
 
     return '{}/{}'.format(os.getcwd(), base)
 
+
 def input_pos1(data):
     return input_pos(data, 1)
+
+
 def input_pos2(data):
     return input_pos(data, 2)
+
+
 def input_pos3(data):
     return input_pos(data, 3)
 
@@ -116,6 +132,7 @@ def genconfig(nn_type):
     tmp.flush()
     return tmp
 
+
 def training_number(name, data):
     logger = logging.getLogger('launch:training_number')
 
@@ -129,7 +146,7 @@ def training_number(name, data):
             validation_fraction=0.1,
             output=name,
             config=cfg.name,
-            structure=[25,20],
+            structure=[25, 20],
             activation='sigmoid2',
             output_activation='sigmoid2',
             regularizer=1e-7,
@@ -145,21 +162,21 @@ def training_number(name, data):
 
 def training_pos(name, data, nparticle):
 
-    nn = 'pos{}'.format(nparticle)
+    nn_type = 'pos{}'.format(nparticle)
 
-    logger = logging.getLogger('launch:training_{}'.format(nn))
+    logger = logging.getLogger('launch:training_{}'.format(nn_type))
 
-    if nn not in name:
-        name += '_{}'.format(nn)
+    if nn_type not in name:
+        name += '_{}'.format(nn_type)
 
-    with genconfig(nn) as cfg:
-        logger.info('training {} neural network'.format(nn))
+    with genconfig(nn_type) as cfg:
+        logger.info('training %s neural network', nn_type)
         train_nn(
-            training_input='{}.{}.training.root'.format(data,nn),
+            training_input='{}.{}.training.root'.format(data, nn_type),
             validation_fraction=0.1,
             output=name,
             config=cfg.name,
-            structure=[40,20],
+            structure=[40, 20],
             activation='sigmoid2',
             output_activation='linear',
             regularizer=1e-7,
@@ -172,11 +189,16 @@ def training_pos(name, data, nparticle):
 
     return '{}/{}'.format(os.getcwd(), name)
 
-def training_pos1(name,data):
+
+def training_pos1(name, data):
     return training_pos(name, data, 1)
-def training_pos2(name,data):
+
+
+def training_pos2(name, data):
     return training_pos(name, data, 2)
-def training_pos3(name,data):
+
+
+def training_pos3(name, data):
     return training_pos(name, data, 3)
 
 
@@ -194,7 +216,6 @@ def evaluation_number(nn_data, test_data, name):
             normalization='{}.normalization.txt'.format(nn_data),
         )
 
-    os.environ['PATH'] += '{}{}/pixel-NN-training'.format(os.pathsep, os.getcwd())
     subprocess.check_call([
         'bash',
         'pixel-NN-training/test-driver',
@@ -210,15 +231,16 @@ def evaluation_number(nn_data, test_data, name):
         name
     ])
 
-def evaluation_pos(nn_data, test_data, name, nparticle):
-    nn = 'pos{}'.format(nparticles)
-    logger = logging.getLogger('launch:evaluation_{}'.format(nn))
 
-    with genconfig(nn) as cfg:
-        logger.info('evaluating performance of {} network'.format(nn))
+def evaluation_pos(nn_data, test_data, name, nparticle):
+    nn_type = 'pos{}'.format(nparticle)
+    logger = logging.getLogger('launch:evaluation_{}'.format(nn_type))
+
+    with genconfig(nn_type) as cfg:
+        logger.info('evaluating performance of %s network', nn_type)
         output = '{}.db'.format(os.path.basename(nn_data))
         eval_nn(
-            inputp='{}.{}.test.root'.format(test_data, nn),
+            inputp='{}.{}.test.root'.format(test_data, nn_type),
             model='{}.model.yaml'.format(nn_data),
             weights='{}.weights.hdf5'.format(nn_data),
             config=cfg.name,
@@ -226,16 +248,15 @@ def evaluation_pos(nn_data, test_data, name, nparticle):
             normalization='{}.normalization.txt'.format(nn_data),
         )
 
-    os.environ['PATH'] += '{}{}/pixel-NN-training'.format(os.pathsep, os.getcwd())
     subprocess.check_call([
         'bash',
         'pixel-NN-training/test-driver',
-        nn,
+        nn_type,
         output,
         output.replace('.db', '.root')
     ])
 
-    logger.warning('figures not produced yet for position neural networks')
+    logger.warning('figures not produced yet for %s position neural networks', name)
 
 
 def get_args():
@@ -248,7 +269,10 @@ def get_args():
     args.add_argument('--do-evaluation', default=False, action='store_true')
     return args.parse_args()
 
+
 def main():
+
+    init()
 
     logger = logging.getLogger('launch:main')
 
@@ -266,7 +290,7 @@ def main():
         nn_data = training_f(args.name, data)
     if args.do_evaluation:
         evaluation_f = globals()['evaluation_{}'.format(args.type)]
-        eval_data = evaluation_f(nn_data, data, args.name)
+        evaluation_f(nn_data, data, args.name)
 
     return 0
 
