@@ -29,6 +29,8 @@ except ImportError:
 
 def input_number(data):
 
+    data = data[0]
+
     logger = logging.getLogger('launch:input_number')
 
     base = os.path.basename(data)
@@ -70,6 +72,8 @@ def input_number(data):
 
 
 def input_pos(data, nparticle):
+
+        data = data[0]
 
     nn_type = 'pos{}'.format(nparticle)
 
