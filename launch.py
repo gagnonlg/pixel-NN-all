@@ -73,7 +73,7 @@ def input_number(data):
 
 def input_pos(data, nparticle):
 
-        data = data[0]
+    data = data[0]
 
     nn_type = 'pos{}'.format(nparticle)
 
