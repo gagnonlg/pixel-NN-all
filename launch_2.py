@@ -380,7 +380,7 @@ def training_number(data, name):
     return data
 
 
-def training_pos(name, data, nparticle):
+def training_pos(data, name, nparticle):
 
     nn_type = 'pos{}'.format(nparticle)
 
@@ -428,7 +428,7 @@ def training_pos3(data, name):
     return training_pos(data, name, 3)
 
 
-def training_error(name, data, flavor):
+def training_error(data, name, flavor):
 
     nn_type = 'error{}'.format(flavor)
 
