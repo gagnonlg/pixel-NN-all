@@ -16,7 +16,8 @@ logging.basicConfig(
 )
 
 
-def validate_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type, name):
+def validate_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type,
+                  name):
     if not any([do_inputs, do_training, do_eval, do_figures]):
         raise ValueError("No action specified")
 
@@ -33,17 +34,23 @@ def validate_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type, na
         raise ValueError('Invalid nn_type: {}'.format(nn_type))
 
     if (do_inputs or do_training or do_eval) and nn_type == 'pos':
-         raise ValueError('nn_type "pos" can only be used with do_figures')
+        raise ValueError('nn_type "pos" can only be used with do_figures')
 
-    if (do_training or do_eval or do_figures) and nn_type in ['error1', 'error2', 'error3']:
-         raise ValueError('nn_type "%s" can only be used with do_inputs' % nn_type)
+    if (do_training or do_eval or do_figures) and \
+       nn_type in ['error1', 'error2', 'error3']:
+        raise ValueError(
+            'nn_type "%s" can only be used with do_inputs' % nn_type
+        )
 
     if re.match('^pos[123]$', nn_type) and do_figures:
-        raise ValueError( 'nn_type "{}" can not be used with do_figures'.format(nn_type))
+        raise ValueError(
+            'nn_type "{}" can not be used with do_figures'.format(nn_type)
+        )
 
     if re.match('^error[123][xy]$', nn_type) and do_inputs:
-        raise ValueError( 'nn_type "{}" can not be used with do_inputs'.format(nn_type))
-
+        raise ValueError(
+            'nn_type "{}" can not be used with do_inputs'.format(nn_type)
+        )
 
     if re.match('^error[123]$', nn_type):
         if 'training-set' not in data:
@@ -51,10 +58,15 @@ def validate_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type, na
         if 'test-set' not in data:
             raise ValueError('--test-set <test set> not specified!')
         if 'NN' not in data:
-            raise ValueError('--NN <model.yaml> <weights.hdf5> <normalization.txt> not specified!')
+            raise ValueError(
+                '--NN <model.yaml> <weights.hdf5> <normalization.txt>'
+                ' not specified!'
+            )
     elif nn_type == 'pos':
         if 'histograms' not in data or len(data['histograms']) != 3:
-            raise ValueError('--pos-histograms <pos1> <pos2> <pos3> not or over- specified!')
+            raise ValueError(
+                '--pos-histograms <pos1> <pos2> <pos3> not or over- specified!'
+            )
     elif do_inputs:
         if 'AOD' not in data:
             raise ValueError('--AOD <aod> not specified!')
@@ -65,40 +77,51 @@ def validate_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type, na
         if 'test-set' not in data:
             raise ValueError('--test-set <test set> not specified!')
         if 'NN' not in data:
-            raise ValueError('--NN <model.yaml> <weights.hdf5> <normalization.txt> not specified!')
+            raise ValueError(
+                '--NN <model.yaml> <weights.hdf5> <normalization.txt>'
+                ' not specified!'
+            )
     elif do_figures:
         if 'histograms' not in data or len(data['histograms']) != 1:
-            raise ValueError('--histograms <histo.root> not or over- specified!')
+            raise ValueError(
+                '--histograms <histo.root> not or over- specified!'
+            )
 
     if not name:
         raise ValueError('Missing name')
 
-def execute_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type, name):
+
+def execute_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type,
+                 name):
+
+    def const_data(*args):
+        return data
 
     if do_inputs:
-        input_f =  globals()['input_{}'.format(nn_type)]
+        input_f = globals()['input_{}'.format(nn_type)]
     else:
-        input_f = lambda _: data
+        input_f = const_data
 
     if do_training:
         training_f = globals()['training_{}'.format(nn_type)]
     else:
-        training_f = lambda _, __: data
+        training_f = const_data
 
     if do_eval:
         eval_f = globals()['eval_{}'.format(nn_type)]
     else:
-        eval_f = lambda _: data
+        eval_f = const_data
 
     if do_figures:
         figures_f = globals()['figures_{}'.format(nn_type)]
     else:
-        figures_f = lambda _: None
+        figures_f = const_data
 
     data = input_f(data)
     data = training_f(data, name)
     data = eval_f(data)
     figures_f(data)
+
 
 def input_number(data):
 
@@ -213,9 +236,14 @@ def input_error(data, nparticle):
 
     nn_model, nn_weights, nn_norm = data['NN']
 
-    nn_output = os.path.basename(nn_model).replace('model.yaml', 'ttrained.root')
+    nn_output = os.path.basename(nn_model).replace(
+        'model.yaml',
+        'ttrained.root'
+    )
 
-    logger.info('converting the position neural network to TTrainedNetwork format')
+    logger.info(
+        'converting the position neural network to TTrainedNetwork format'
+    )
     subprocess.check_call([
         'python2',
         'pixel-NN-training/keras2ttrained.py',
@@ -250,6 +278,7 @@ def input_error(data, nparticle):
         data[dkey] = output
 
     return data
+
 
 def input_error1(data):
     return input_error(data, 1)
@@ -393,6 +422,7 @@ def training_error(name, data, flavor):
 
     return data
 
+
 def training_error1x(data, name):
     return training_error(data, name, '1x')
 
@@ -440,9 +470,13 @@ def eval_nn(data, nn_type):
         output.replace('.db', '.root')
     ])
 
-    data['histograms'] = ['{}/{}'.format(os.getcwd(), output.replace('.db', '.root'))]
+    data['histograms'] = ['{}/{}'.format(
+        os.getcwd(),
+        output.replace('.db', '.root'))
+    ]
 
     return data
+
 
 def eval_number(data):
     return eval_nn(data, 'number')
@@ -491,7 +525,7 @@ def figures_number(data):
         'python2',
         'pixel-NN-training/graphs/ROC_curves.py',
         histograms,
-        os.path.basename(histograms).replace('.root','')
+        os.path.basename(histograms).replace('.root', '')
     ])
 
 
@@ -528,12 +562,28 @@ def launch(do_inputs, do_training, do_eval, do_figures, data, nn_type, name):
     logger = logging.getLogger('launch')
 
     try:
-        validate_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type, name)
+        validate_plan(
+            do_inputs,
+            do_training,
+            do_eval,
+            do_figures,
+            data,
+            nn_type,
+            name
+        )
     except ValueError as error:
         logger.error(error)
         exit(1)
 
-    execute_plan(do_inputs, do_training, do_eval, do_figures, data, nn_type, name)
+    execute_plan(
+        do_inputs,
+        do_training,
+        do_eval,
+        do_figures,
+        data,
+        nn_type,
+        name
+    )
 
 
 def get_args():
@@ -548,8 +598,13 @@ def get_args():
     args.add_argument('--AOD')
     args.add_argument('--training-set')
     args.add_argument('--test-set')
-    args.add_argument('--NN', nargs=3, help='<model> <weights> <normalization>')
+    args.add_argument(
+        '--NN',
+        nargs=3,
+        help='<model> <weights> <normalization>'
+    )
     return args.parse_args()
+
 
 def main():
 
