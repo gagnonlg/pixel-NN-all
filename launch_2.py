@@ -366,8 +366,8 @@ def training_number(data, name):
             regularizer=1e-7,
             momentum=0.4,
             batch=60,
-            min_epochs=50,
-            max_epochs=100,
+            min_epochs=1,
+            max_epochs=1,
             verbose=True
         )
 
@@ -402,8 +402,8 @@ def training_pos(name, data, nparticle):
             regularizer=1e-7,
             momentum=0.3,
             batch=30,
-            min_epochs=50,
-            max_epochs=100,
+            min_epochs=1,
+            max_epochs=1,
             verbose=True
         )
 
@@ -450,8 +450,8 @@ def training_error(name, data, flavor):
             regularizer=1e-6,
             momentum=0.7,
             batch=50,
-            min_epochs=50,
-            max_epochs=100,
+            min_epochs=1,
+            max_epochs=1,
             verbose=True
         )
 
