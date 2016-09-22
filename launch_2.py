@@ -657,7 +657,7 @@ def main():
         'do_figures': args.do_figures
     }
 
-    launch(actions, data, args.nn_type, args.name)
+    launch(actions, data, args.nn_type, args.nn_name)
 
 if __name__ == '__main__':
     main()
