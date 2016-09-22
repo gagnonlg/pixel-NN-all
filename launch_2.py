@@ -253,8 +253,8 @@ def input_pos(data, nparticle):
     ])
 
     dset_base = '{}/{}'.format(os.getcwd(), base)
-    data['training-set'] = '{}.pos{}.root'.format(dset_base, nparticle)
-    data['test-set'] = '{}.pos{}.root'.format(dset_base, nparticle)
+    data['training-set'] = '{}.pos{}.training.root'.format(dset_base, nparticle)
+    data['test-set'] = '{}.pos{}.test.root'.format(dset_base, nparticle)
 
     return data
 
