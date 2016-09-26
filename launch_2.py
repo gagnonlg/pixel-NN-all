@@ -9,7 +9,7 @@ import tempfile
 
 NN_TYPES = ['number', 'pos1', 'pos2', 'pos3', 'error1x', 'error1y',
             'error2x', 'error2y', 'error3x', 'error3y',
-            'error1', 'error2', 'error3']
+            'error1', 'error2', 'error3', 'errorx', 'errory']
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -64,11 +64,22 @@ def _validate_type(actions, nn_type):
         raise ValueError(
             'nn_type "%s" can only be used with do_inputs' % nn_type
         )
-
-    if re.match('^error[123][xy]$', nn_type) and actions['do_inputs']:
+    if (actions['do_training'] or actions['do_eval'] or actions['do_inputs']) \
+       and nn_type in ['errorx', 'errory']:
         raise ValueError(
-            'nn_type "{}" can not be used with do_inputs'.format(nn_type)
+            'nn_type "%s" can only be used with do_figures' % nn_type
         )
+
+
+    if re.match('^error[123][xy]$', nn_type):
+        if actions['do_inputs']:
+            raise ValueError(
+                'nn_type "{}" can not be used with do_inputs'.format(nn_type)
+            )
+        if actions['do_figures']:
+            raise ValueError(
+                'nn_type "{}" can not be used with do_figures'.format(nn_type)
+            )
 
 
 def _validate_data(actions, nn_type, data):  # pylint: disable=too-many-branches
@@ -83,7 +94,7 @@ def _validate_data(actions, nn_type, data):  # pylint: disable=too-many-branches
                 ' not specified!'
             )
 
-    elif nn_type == 'pos':
+    elif nn_type in ['errorx', 'errory']:
         if 'histograms' not in data or len(data['histograms']) != 3:
             raise ValueError(
                 '--pos-histograms <pos1> <pos2> <pos3> not or over- specified!'
@@ -586,28 +597,27 @@ def figures_pos3(data):
     return figures_pos(data, 3)
 
 
-def figures_error1x(data):
-    logging.warning('figures_error1x not implemented')
+def figures_error(data, d):
+    logger = logging.getLogger('launch:figures_error{}'.format(d))
+    logger.info('producing figures for error{} neural network'.format(d))
+    hist_1 = data['histograms'][0]
+    hist_2 = data['histograms'][1]
+    hist_3 = data['histograms'][2]
+    subprocess.check_call([
+        'python2',
+        'pixel-NN-training/graphs/pulls.py',
+        hist_1, hist_2, hist_3,
+        os.path.basename(hist_1).replace('error1', 'error').replace('.root', ''),
+        d
+    ])
 
 
-def figures_error1y(data):
-    logging.warning('figures_error1y not implemented')
+def figures_errorx(data):
+    figures_error(data, 'X')
 
 
-def figures_error2x(data):
-    logging.warning('figures_error2x not implemented')
-
-
-def figures_error2y(data):
-    logging.warning('figures_error2y not implemented')
-
-
-def figures_error3x(data):
-    logging.warning('figures_error3x not implemented')
-
-
-def figures_error3y(data):
-    logging.warning('figures_error3y not implemented')
+def figures_errory(data):
+    figures_error(data, 'Y')
 
 
 def launch(actions, data, nn_type, name):
