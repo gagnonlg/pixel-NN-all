@@ -8,7 +8,7 @@ import tempfile
 
 
 NN_TYPES = ['number', 'pos1', 'pos2', 'pos3', 'error1x', 'error1y',
-            'error2x', 'error2y', 'error3x', 'error3y', 'pos',
+            'error2x', 'error2y', 'error3x', 'error3y',
             'error1', 'error2', 'error3']
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -59,19 +59,10 @@ def _validate_type(actions, nn_type):
     if nn_type not in NN_TYPES:
         raise ValueError('Invalid nn_type: {}'.format(nn_type))
 
-    if (actions['do_inputs'] or actions['do_training'] or actions['do_eval']) \
-       and nn_type == 'pos':
-        raise ValueError('nn_type "pos" can only be used with do_figures')
-
     if (actions['do_training'] or actions['do_eval'] or actions['do_figures']) \
        and nn_type in ['error1', 'error2', 'error3']:
         raise ValueError(
             'nn_type "%s" can only be used with do_inputs' % nn_type
-        )
-
-    if re.match('^pos[123]$', nn_type) and actions['do_figures']:
-        raise ValueError(
-            'nn_type "{}" can not be used with do_figures'.format(nn_type)
         )
 
     if re.match('^error[123][xy]$', nn_type) and actions['do_inputs']:
@@ -571,8 +562,28 @@ def figures_number(data):
     ])
 
 
-def figures_pos(data):
-    logging.warning('figures_pos not implemented')
+def figures_pos(data, n):
+    logger = logging.getLogger('launch:figures_pos{}'.format(n))
+    logger.info('producing figures for pos{} neural network'.format(n))
+    histograms = data['histograms'][0]
+    subprocess.check_call([
+        'python2',
+        'pixel-NN-training/graphs/residuals.py',
+        histograms,
+        os.path.basename(histograms).replace('.root', '')
+    ])
+
+
+def figures_pos1(data):
+    return figures_pos(data, 1)
+
+
+def figures_pos2(data):
+    return figures_pos(data, 2)
+
+
+def figures_pos3(data):
+    return figures_pos(data, 3)
 
 
 def figures_error1x(data):
