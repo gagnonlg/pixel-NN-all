@@ -29,8 +29,8 @@ try:
     # pylint: disable=wrong-import-position
     from evalNN_keras import eval_nn
     from trainNN_keras import train_nn
-except ImportError:
-    logging.warning('ImportError for evalNN_keras or trainNN_keras')
+except ImportError as e:
+    logging.warning('ImportError for evalNN_keras or trainNN_keras: %s', str(e))
 
 
 def _validate_actions(actions):
