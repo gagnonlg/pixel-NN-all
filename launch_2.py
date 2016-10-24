@@ -182,7 +182,8 @@ def input_number(data):
         '--submit-dir', 'submit_number',
         '--driver', 'direct',
         '--overwrite',
-        '--type', 'number'
+        '--type', 'number',
+        '--doValidation',
     ])
 
     logger.info('resampling the dataset')
@@ -232,7 +233,8 @@ def input_pos(data, nparticle):
         '--submit-dir', 'submit_{}'.format(nn_type),
         '--driver', 'direct',
         '--overwrite',
-        '--type', nn_type
+        '--type', nn_type,
+        '--doValidation',
     ])
 
     logger.info('resizing the dataset')
